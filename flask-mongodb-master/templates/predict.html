@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Damage Prediction</title>
+    <link rel="stylesheet" href="/static/prediction-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Disaster Damage Prediction</h1>
+            <p>Enter disaster details to predict the expected economic damage using our intelligent system.</p>
+        </header>
+
+        <section class="form-section">
+            <h2>Predict Economic Damage</h2>
+            <form id="predict-form">
+                <label for="year">Year:</label>
+                <input type="number" id="year" name="year" placeholder="e.g., 2024" required>
+
+                <label for="total-events">Total Events:</label>
+                <input type="number" id="total-events" name="total_events" placeholder="e.g., 10" required>
+
+                <label for="total-affected">Total Affected:</label>
+                <input type="number" id="total-affected" name="total_affected" placeholder="e.g., 10000" required>
+
+                <label for="total-deaths">Total Deaths:</label>
+                <input type="number" id="total-deaths" name="total_deaths" placeholder="e.g., 200" required>
+
+                <label for="cpi">CPI (Consumer Price Index):</label>
+                <input type="number" step="0.01" id="cpi" name="cpi" placeholder="e.g., 1.5" required>
+
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country" placeholder="e.g., Brazil" required>
+
+                <label for="disaster-group">Disaster Group:</label>
+                <input type="text" id="disaster-group" name="disaster_group" placeholder="e.g., Natural" required>
+
+                <label for="disaster-type">Disaster Type:</label>
+                <input type="text" id="disaster-type" name="disaster_type" placeholder="e.g., Flood" required>
+
+                <label for="disaster-subtype">Disaster Subtype:</label>
+                <input type="text" id="disaster-subtype" name="disaster_subtype" placeholder="e.g., Flash Flood" required>
+
+                <button type="button" onclick="predictDamage()">Predict Damage</button>
+            </form>
+
+            <div id="prediction-result" class="result-section"></div>
+        </section>
+    </div>
+
+    <script>
+        async function predictDamage() {
+            try {
+                const year = parseInt(document.getElementById("year").value);
+                const totalEvents = parseInt(document.getElementById("total-events").value);
+                const totalAffected = parseInt(document.getElementById("total-affected").value);
+                const totalDeaths = parseInt(document.getElementById("total-deaths").value);
+                const cpi = parseFloat(document.getElementById("cpi").value);
+                const country = document.getElementById("country").value;
+                const disasterGroup = document.getElementById("disaster-group").value;
+                const disasterType = document.getElementById("disaster-type").value;
+                const disasterSubtype = document.getElementById("disaster-subtype").value;
+
+                // Validate inputs
+                if (
+                    isNaN(year) || isNaN(totalEvents) || isNaN(totalAffected) || isNaN(totalDeaths) || isNaN(cpi) ||
+                    !country || !disasterGroup || !disasterType || !disasterSubtype
+                ) {
+                    document.getElementById("prediction-result").innerHTML =
+                        `<h3 style="color:red;">All fields are required. Please fill them in correctly.</h3>`;
+                    return;
+                }
+
+                const data = {
+                    "Year": year,
+                    "Total Events": totalEvents,
+                    "Total Affected": totalAffected,
+                    "Total Deaths": totalDeaths,
+                    "CPI (Consumer Price Index)": cpi,
+                    "Country": country,
+                    "Disaster Group": disasterGroup,
+                    "Disaster Type": disasterType,
+                    "Disaster Subtype": disasterSubtype
+                };
+
+                console.log("Sending data to backend:", data); // Debugging log
+
+                const response = await fetch("/predict-result", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log("Response from backend:", result); // Debugging log
+
+                if (!("prediction" in result)) {
+                    throw new Error("Prediction value not found in backend response.");
+                }
+
+                document.getElementById("prediction-result").innerHTML =
+                    `<h3 style="color:green;">Predicted Economic Damage: <strong>$${result.prediction.toFixed(2)}</strong></h3>`;
+            } catch (error) {
+                console.error("Error during prediction:", error);
+                document.getElementById("prediction-result").innerHTML =
+                    `<h3 style="color:red;">Error: ${error.message}. Please check your input or try again later.</h3>`;
+            }
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Operations</title>
+    <link rel="stylesheet" href="/static/crud-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CRUD Operations</h1>
+            <p>Manage data in the collection using Create, Read, Update, and Delete operations.</p>
+        </header>
+
+        <!-- Add or Update Data Section -->
+        <section class="form-section">
+            <h2>Add or Update Data</h2>
+            <form id="data-form">
+                <label for="record-id">Record ID (Unique):</label>
+                <input type="text" id="record-id" placeholder="Enter a unique ID" required>
+
+                <label for="data">Data (in JSON format):</label>
+                <textarea id="data" rows="5" placeholder='{"key": "value"}' required></textarea>
+
+                <button type="button" onclick="addOrUpdateData()">Submit</button>
+            </form>
+        </section>
+
+        <!-- Delete Data Section -->
+        <section class="form-section">
+            <h2>Delete Data</h2>
+            <form id="delete-form">
+                <label for="delete-id">Record ID to Delete:</label>
+                <input type="text" id="delete-id" placeholder="Enter the ID to delete" required>
+
+                <button type="button" onclick="deleteData()">Delete</button>
+            </form>
+        </section>
+
+        <!-- Fetch Data Section -->
+        <section class="form-section">
+            <h2>Fetch Data</h2>
+            <button type="button" onclick="fetchData()">Fetch All Records</button>
+        </section>
+
+        <!-- Data Display Section -->
+        <section class="data-section">
+            <h2>Data Records</h2>
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th>Record Details</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        // Helper function to display messages
+        function showMessage(message, isError = false) {
+            alert(isError ? `Error: ${message}` : message);
+        }
+
+// Add or Update Data
+        async function addOrUpdateData() {
+            const data = document.getElementById("data").value;
+
+            if (!data) {
+                showMessage("Please provide Data", true);
+                return;
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(data); // Validate JSON format
+            } catch (error) {
+                showMessage("Invalid JSON format. Please check your input.", true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/insert-or-update`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(parsedData),
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || "Server error occurred");
+                }
+                showMessage(result.message || "Operation successful!");
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        // Delete Data
+        async function deleteData() {
+            const recordId = document.getElementById("delete-id").value;
+
+            if (!recordId) {
+                showMessage("Please provide a Record ID", true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/delete/${parseInt(recordId, 10)}`, { method: "DELETE" });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || "Server error occurred");
+                }
+                showMessage(result.message || "Record deleted successfully!");
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        // Fetch Data
+        async function fetchData() {
+            try {
+                const response = await fetch("/get");
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error("Failed to fetch data");
+                }
+
+                const tableBody = document.getElementById("data-table").querySelector("tbody");
+                tableBody.innerHTML = ""; // Clear existing rows
+
+                data.forEach((record) => {
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.textContent = JSON.stringify(record, null, 2);
+                    row.appendChild(cell);
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+
+    </script>
+</body>
+</html>
